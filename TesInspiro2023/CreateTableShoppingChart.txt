@@ -1,0 +1,12 @@
+*** USE POSTGRESQL ***
+CREATE SEQUENCE shopping_cart_id_seq;
+CREATE TABLE shopping_cart (
+    id integer primary key DEFAULT nextval('shopping_cart_id_seq') NOT null,
+    item_id int4 NULL,
+	username varchar NULL,
+	qty int4 NULL,
+	total_price int4 NULL,
+	created_dtm timestamptz NULL DEFAULT now(),
+	updated_dtm timestamptz NULL,
+	is_paid bool NULL
+);

@@ -1,0 +1,252 @@
+﻿@using TesInspiro.Domain
+@model List<ShoppingCartViewModel>;
+@{
+    ViewData["Title"] = "Shopping Cart";
+    string? username = ViewData["Username"].ToString();
+}
+
+<style>
+    .btnSubmit {
+		background:linear-gradient(to bottom, #44c767 5%, #5cbf2a 100%);
+		background-color:#44c767;
+		border-radius:28px;
+		border:1px solid #18ab29;
+		display:inline-block;
+		cursor:pointer;
+		color:#ffffff !important;
+		font-family:Arial;
+		font-size:17px;
+		padding:5px 20px;
+		text-decoration:none;
+		text-shadow:0px 1px 0px #2f6627;
+	}
+	.btnSubmit:not(.disabled):hover {
+		background:linear-gradient(to bottom, #5cbf2a 5%, #44c767 100%);
+		background-color:#5cbf2a;
+	}
+	.btnSubmit:not(.disabled):active {
+		position:relative;
+		top:1px;
+	}
+
+    .btnDelete {
+        cursor: pointer;
+    }
+    
+    .btnBack {
+	    box-shadow: 3px 4px 0px 0px #899599;
+	    background:linear-gradient(to bottom, #ededed 5%, #bab1ba 100%);
+	    background-color:#ededed;
+	    border-radius:15px;
+	    border:1px solid #d6bcd6;
+	    display:inline-block;
+	    cursor:pointer;
+	    color:#3a8a9e !important;
+	    font-family:Arial;
+	    font-size:17px;
+	    padding:7px 25px;
+	    text-decoration:none;
+	    text-shadow:0px 1px 0px #e1e2ed;
+    }
+    .btnBack:not(.disabled):hover {
+	    background:linear-gradient(to bottom, #bab1ba 5%, #ededed 100%);
+	    background-color:#bab1ba;
+    }
+    .btnBack:not(.disabled):active {
+	    position:relative;
+	    top:1px;
+    }
+</style>
+<h4>Shopping Cart</h4>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-2">
+            <span class="form-label">Grand Total:</span>
+        </div>
+        <div class="col-md-2">
+            <span class="form-label" id="grand-total" style="font-weight:bold;"></span>
+        </div>
+    </div>
+    <div class="row">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Item Name</th>
+              <th scope="col">Qty</th>
+              <th scope="col">Price</th>
+              <th scope="col">Total Price</th>
+              <th scope="col"></th>
+            </tr>
+          </thead>
+          <tbody>
+              @if (Model.Count() < 1)
+               {
+                <tr class="empty">
+                    <td colspan="6" class="empty text-center">No items to display.</td>
+                </tr>
+               }
+               else
+               {
+                   foreach(var items in Model){
+                    <tr>
+                        <th scope="row"><span class="item-id">@items.id</span></th>
+                        <td><span class="item-name">@items.item_name</span></td>
+                        <td><input onchange='UpdateItemCart(this)' type="number" min="0" class="item-qty" value="@items.qty" /></td>
+                        <td><span class="item-price">@string.Format("Rp {0:n0}", items.price)</span></td>
+                        <td><span class="item-totalPrice">@string.Format("Rp {0:n0}", items.total_price)</span></td>
+                        <td><a class="btnDelete" onclick="DeleteFromCart(this)">Delete</a></td>
+                    </tr>
+                   }
+               }
+          </tbody>
+        </table>
+    </div>
+    <div class="row">
+        <div class="col-md-2">
+            <a class="btnBack">Back</a>
+        </div>
+        <div class="col-md-3">
+            <a class="btnSubmit">Continue to payment</a>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+var grandTotal = 0;
+function addCommas(nStr) {
+    nStr += '';
+    var x = nStr.split('.');
+    var x1 = x[0];
+    var x2 = x.length > 1 ? '.' + x[1] : '';
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(x1)) {
+        x1 = x1.replace(rgx, '$1' + ',' + '$2');
+    }
+    return x1 + x2;
+};
+function DeleteFromCart(row){
+    var id = $(row).closest("tr").find(".item-id").text();
+    var entity = {
+        id: id,
+        username: "@username"
+    }
+    $.ajax({
+        type: 'POST',
+        url: '@Url.Action("DeleteShoppingCart", "ShoppingCart")',
+        data: entity,
+        success: function(data) {
+            $(".table tbody tr").remove();
+            grandTotal = 0;
+            var newRow = "";
+            if (data.total > 0) {
+                $.each(data, function(index, item) {
+                    $.each(item, function(i, entity) {
+                        grandTotal = grandTotal + entity.total_price;
+                        var id = "<tr><th scope='row'><span class='item-id'>" + entity.id + "</span></th>";
+                        var itemName = "<td><span class='item-name'>" + entity.item_name + "</span></td>";
+                        var itemQty = "<td><input onchange='UpdateItemCart(this)' type='number' class='item-qty' min='0' value='" + entity.qty + "'/></td>";
+                        var itemPrice = "<td><span class='item-price'>Rp " + addCommas(entity.price) + "</span></td>";
+                        var itemTotalPrice = "<td><span class='item-totalPrice'>Rp " + addCommas(entity.total_price) + "</span></td>";
+                        var btnDelete = "<td><a class='btnDelete' onclick='DeleteFromCart(this)'>Delete</a></td></tr>";
+                        newRow = id + itemName + itemQty + itemPrice + itemTotalPrice + btnDelete;
+                        $(".table tbody").append($(newRow));
+                        $("#grand-total").text("Rp " + addCommas(grandTotal));
+                    });
+                });
+            }
+            else {
+                newRow = "<tr class='empty'><td colspan='4' class='empty text-center'>No items to display.</td></tr>"
+                $(".table tbody").append($(newRow));
+                $(".btnSubmit").remove();
+                $("#grand-total").text("Rp " + addCommas(grandTotal));
+            }
+        },
+        error: function(data) {
+            alert(JSON.stringify(data));
+        }
+    });
+};
+function UpdateItemCart(row) {
+    var id = $(row).closest("tr").find(".item-id").text();
+    var qty = $(row).val();
+    var entity = {
+        id: id,
+        qty: qty,
+        username: "@username"
+    }
+    $.ajax({
+        type: 'POST',
+        url: '@Url.Action("UpdateItemCart", "ShoppingCart")',
+        data: entity,
+        success: function (data) {
+            $(".table tbody tr").remove();
+            var newRow = "";
+            grandTotal = 0;
+            if (data.total > 0) {
+                $.each(data, function(index, item) {
+                    $.each(item, function(i, entity) {
+                        grandTotal = grandTotal + entity.total_price;
+                        var id = "<tr><th scope='row'><span class='item-id'>" + entity.id + "</span></th>";
+                        var itemName = "<td><span class='item-name'>" + entity.item_name + "</span></td>";
+                        var itemQty = "<td><input onchange='UpdateItemCart(this)' type='number' class='item-qty' min='0' value='" + entity.qty + "'/></td>";
+                        var itemPrice = "<td><span class='item-price'>Rp " + addCommas(entity.price) + "</span></td>";
+                        var itemTotalPrice = "<td><span class='item-totalPrice'>Rp " + addCommas(entity.total_price) + "</span></td>";
+                        var btnDelete = "<td><a class='btnDelete' onclick='DeleteFromCart(this)'>Delete</a></td></tr>";
+                        newRow = id + itemName + itemQty + itemPrice + itemTotalPrice + btnDelete;
+                        $(".table tbody").append($(newRow));
+                        $("#grand-total").text("Rp " + addCommas(grandTotal));
+                    });
+                });
+            }
+            else {
+                newRow = "<tr class='empty'><td colspan='6' class='empty text-center'>No items to display.</td></tr>"
+                $(".table tbody").append($(newRow));
+                $(".btnSubmit").remove();
+                $("#grand-total").text("Rp " + addCommas(grandTotal));
+            }
+        },
+        error: function (data) {
+            alert(JSON.stringify(data));
+        }
+    });
+};
+function CheckCarts(){
+    grandTotal = 0;
+    var model = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model));
+    $.each(model, function(index, model) {
+        grandTotal = grandTotal + model.total_price;
+    });
+    $("#grand-total").text("Rp " + addCommas(grandTotal));
+    if (@Model.Count < 1) {
+        $(".btnSubmit").remove();
+    }
+};
+CheckCarts();
+
+$(document).ready(function() {
+    $(".btnBack").click(function() {
+        window.location.href = '@Url.Action("index", "Home")';
+    });
+    $(".btnSubmit").click(function() {
+        var entity = {
+            username: "@username",
+            grandTotal: grandTotal
+        };
+        $.ajax({
+            //type: 'GET',
+            url: '@Url.Action("ShowPaymentPage", "ShoppingCart")',
+            data: entity,
+            success: function(data) {
+                //$("body").html(data);
+                window.location.href = '@Url.Action("PaymentPage", "ShoppingCart")';
+            },
+            error: function(data) {
+                alert(JSON.stringify(data));
+            }
+        });
+    });
+    
+});
+</script>

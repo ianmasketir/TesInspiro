@@ -1,0 +1,9 @@
+*** USE POSTGRESQL ***
+CREATE SEQUENCE payment_id_seq;
+CREATE TABLE payment (
+    id integer primary key DEFAULT nextval('payment_id_seq') NOT null,
+    username varchar NULL,
+	grand_total int4 NULL,
+	pay int4 NULL,
+	created_dtm timestamptz NULL DEFAULT now()
+);

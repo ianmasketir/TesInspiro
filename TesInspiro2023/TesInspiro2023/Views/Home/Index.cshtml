@@ -1,0 +1,206 @@
+﻿@using TesInspiro.Domain;
+@model List<MsItemsViewModel>;
+@{
+    ViewData["Title"] = "Home Page";
+    //List<MsItemsViewModel> listItems = ViewData["ListItems"] as List<MsItemsViewModel>;
+}
+
+<style>
+    .btnSearch {
+		background:linear-gradient(to bottom, #44c767 5%, #5cbf2a 100%);
+		background-color:#44c767;
+		border-radius:28px;
+		border:1px solid #18ab29;
+		display:inline-block;
+		cursor:pointer;
+		color:#ffffff;
+		font-family:Arial;
+		font-size:17px;
+		padding:5px 20px;
+		text-decoration:none;
+		text-shadow:0px 1px 0px #2f6627;
+	}
+	.btnSearch:hover {
+		background:linear-gradient(to bottom, #5cbf2a 5%, #44c767 100%);
+		background-color:#5cbf2a;
+		color: #fff;
+	}
+	.btnSearch:active {
+		position:relative;
+		top:1px;
+	}
+    .btnView {
+        cursor: pointer;
+    }
+
+    .btnViewShoppingCart {
+	    box-shadow: 0px 1px 0px 0px #f0f7fa;
+	    background:linear-gradient(to bottom, #33bdef 5%, #019ad2 100%);
+	    background-color:#33bdef;
+	    border-radius:6px;
+	    border:1px solid #057fd0;
+	    display:inline-block;
+	    cursor:pointer;
+	    color:#ffffff;
+	    font-family:Arial;
+	    font-size:15px;
+	    font-weight:bold;
+	    padding:6px 24px;
+	    text-decoration:none;
+	    text-shadow:0px -1px 0px #5b6178;
+    }
+    .btnViewShoppingCart:hover {
+	    background:linear-gradient(to bottom, #019ad2 5%, #33bdef 100%);
+	    background-color:#019ad2;
+        color: #fff;
+    }
+    .btnViewShoppingCart:active {
+	    position:relative;
+	    top:1px;
+    }
+</style>
+
+<div class="text-center">
+    <h1 class="display-4">Welcome, <span id="username">Inspiro</span></h1>
+    @*<p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>*@
+    <a class="btnViewShoppingCart">Shopping Cart</a>
+</div>
+<div>
+    <h4>Search</h4>
+    @*<form>
+        <input type="text" class="form-control form-control-lg" id="searchKey" placeholder="Enter keyword search">
+    </form>*@
+    <input type="text" id="searchKey" name="searchKey" placeholder="Enter item name">
+    <input type="text" id="page" name="page" placeholder="Enter page number" value="1">
+    <a class="btnSearch">Search</a>
+</div>
+
+<div style="margin-top:10px;">
+    @*<h4>List</h4><br />*@
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Item Name</th>
+          <th scope="col">Price</th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+          @if (Model.Count() < 1)
+           {
+            <tr class="empty">
+                <td colspan="4" class="empty text-center">No items to display.</td>
+            </tr>
+           }
+           else
+           {
+               foreach(var items in Model){
+                <tr>
+                    <th scope="row"><span class="item-id">@items.id</span></th>
+                    <td><span class="item-name">@items.item_name</span></td>
+                    <td><span class="item-price">@string.Format("Rp {0:n0}", items.price)</span></td>
+                    <td><a class="btnView" onclick="showDetail(this)">View Detail</a></td>
+                </tr>
+               }
+           }
+      </tbody>
+    </table>
+</div>
+
+
+<script type="text/javascript">
+    function addCommas(nStr) {
+        nStr += '';
+        var x = nStr.split('.');
+        var x1 = x[0];
+        var x2 = x.length > 1 ? '.' + x[1] : '';
+        var rgx = /(\d+)(\d{3})/;
+        while (rgx.test(x1)) {
+            x1 = x1.replace(rgx, '$1' + ',' + '$2');
+        }
+        return x1 + x2;
+    };
+    function SearchItems(entity) {
+        $.ajax({
+            type: 'GET',
+            url: '@Url.Action("GetListItems", "Home")',
+            data: entity,
+            success: function (data) {
+                $(".table tbody tr").remove();
+                var newRow = "";
+                if (data.total > 0) {
+                    $.each(data, function(index, item) {
+                        $.each(item, function(i, entity) {
+                            var id = "<tr><th scope='row'><span class='item-id'>" + entity.id + "</span></th>";
+                            var itemName = "<td><span class='item-name'>" + entity.item_name + "</span></td>";
+                            var itemPrice = "<td><span class='item-price'>Rp " + addCommas(entity.price) + "</span></td>";
+                            var btnViewDetail = "<td><a class='btnView' onclick='showDetail(this)'>View Detail</a></td></tr>";
+                            newRow = id + itemName + itemPrice + btnViewDetail;
+                            $(".table tbody").append($(newRow));
+                        });
+                    });
+                }
+                else {
+                    newRow = "<tr class='empty'><td colspan='4' class='empty text-center'>No items to display.</td></tr>"
+                }
+                $(".table tbody").append($(newRow));
+            },
+            error: function (data) {
+                alert(JSON.stringify(data));
+            }
+        });
+    };
+    function showDetail(row) {
+        var id = $(row).closest("tr").find(".item-id").text();
+        var entity = {
+            id: id,
+            username: $("#username").text()
+        }
+        $.ajax({
+            //type: 'GET',
+            url: '@Url.Action("ShowDetailItem", "Home")',
+            data: entity,
+            success: function(data) {
+                //$("body").html(data);
+                window.location.href = '@Url.Action("index", "DetailItem")';
+            },
+            error: function(data) {
+                alert(JSON.stringify(data));
+            }
+        });
+    };
+    function ShowShoppingCart(entity) {
+        $.ajax({
+            //type: 'GET',
+            url: '@Url.Action("ShowShoppingCart", "Home")',
+            data: entity,
+            success: function(data) {
+                //$("body").html(data);
+                window.location.href = '@Url.Action("index", "ShoppingCart")';
+            },
+            error: function(data) {
+                alert(JSON.stringify(data));
+            }
+        });
+    };
+
+    $(document).ready(function() {
+        $(".btnSearch").click(function() {
+		    var searchKey = $("#searchKey").val();
+		    var page = $("#page").val();
+        
+            var entity = {
+                item_name: searchKey,
+                page: page
+            };
+            SearchItems(entity);
+        });
+        $(".btnViewShoppingCart").click(function() {
+            var entity = {
+                username: $("#username").text()
+            };
+            ShowShoppingCart(entity);
+        });
+    });
+</script>

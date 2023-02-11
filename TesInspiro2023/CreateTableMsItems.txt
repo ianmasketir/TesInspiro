@@ -1,0 +1,8 @@
+*** USE POSTGRESQL ***
+CREATE SEQUENCE ms_items_id_seq;
+CREATE TABLE ms_items (
+    id integer primary key DEFAULT nextval('ms_items_id_seq') NOT null,
+    item_name varchar NULL,
+	qty int4 NULL,
+	price int4 NULL
+);
